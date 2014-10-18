@@ -1,0 +1,27 @@
+--MenuBar and StartMenu
+local menubar = require("menubar")
+local menugen = require("menugen")
+
+
+-- SNIP
+
+
+-- {{{ Menu
+
+-- Create a laucher widget and a main menu
+myawesomemenu = {
+   { "edit config", editor_cmd .. " " .. awesome.conffile },
+   { "restart", awesome.restart },
+   { "quit", awesome.quit }
+}
+menu_items = menugen.build_menu()
+
+table.insert(menu_items, { "awesome", myawesomemenu, beautiful.awesome_icon })
+table.insert(menu_items, { "open terminal", terminal })
+
+mymainmenu = awful.menu({ items = menu_items, width = 150 })
+  
+mylauncher = awful.widget.launcher({ image = beautiful.awesome_icon,
+                                     menu = mymainmenu })
+
+-- SNIP

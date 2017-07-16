@@ -1,62 +1,89 @@
 ---------------------------------------------------------------------------
--- @author Harvey Mittens
--- @copyright 2014 Harvey Mittens
--- @email teknocratdefunct@riseup.net
--- @release v3.5.5
+-- @author Gino
+-- @release v4.0_alpha
 ---------------------------------------------------------------------------
-
-local menu_gen = require("menubar.menu_gen")
-local menu_utils = require("menubar.utils")
+local icon_theme = require("menubar.icon_theme")
+local menubar = require("menubar")
+local awful_menu = require("awful.menu")
 local pairs = pairs
 local ipairs = ipairs
 local table = table
-local string = string
-local next = next
+local io = io
+local coroutine = coroutine
 
 module("menugen")
 
---Built in menubar should be checking local applications directory
-menu_gen.all_menu_dirs = { '/usr/share/applications/', '/usr/local/share/applications/', '~/.local/share/applications' }
+local menugen = { awfulmenutable = {} }
+
+--Recursive Search for subdirectories in local user path (Wine Support)
+local handle = io.popen("find ~/.local/share/applications -type d")
+for dirname in handle:lines() do
+	table.insert(menubar.menu_gen.all_menu_dirs, dirname)
+end
+handle:close()
 
 --Expecting an wm_name of awesome omits too many applications and tools
-menu_utils.wm_name = ""
+menubar.utils.wm_name = ""
 
 -- Use MenuBar Parsing Utils to build StartMenu for Awesome
 -- @return awful.menu compliant menu items tree
 function build_menu()
-	local result = {}
-	local menulist = menu_gen.generate()
-
-	for k,v in pairs(menu_gen.all_categories) do
-		table.insert(result, {k, {}, v["icon"] } )
+	for k,v in pairs(menubar.menu_gen.all_categories) do
+		v["icon_name"] = icon_theme():find_icon_path(v["icon_name"])
+		table.insert(menugen.awfulmenutable, { k, {}, v["icon_name"] } )
 	end
-	
-	for k, v in ipairs(menulist) do
-		for _, cat in ipairs(result) do
-			if cat[1] == v["category"] then
-				table.insert( cat[2] , { v["name"], v["cmdline"], v["icon"] } )
-				break
+
+	table.insert(menugen.awfulmenutable, {"Other", {} } )
+	menubar.menu_gen.generate(function(entries) 		
+		for i = 1, #entries do
+			for j,cat in ipairs(menugen.awfulmenutable) do
+				if cat[1] == entries[i]["category"] then
+					table.insert( cat[2] , { entries[i].name, entries[i].cmdline, entries[i].icon } )
+					break
+				end
+				if cat[1] == "Other" then
+					table.insert( cat[2] , { entries[i].name, entries[i].cmdline, entries[i].icon } )
+				end
 			end
 		end
-	end
-	
-	-- Cleanup Things a Bit
-	for k,v in ipairs(result) do
-		-- Remove Unused Categories
-		if not next(v[2]) then
-			table.remove(result, k)
-		else
-			--Sort entries Alphabetically (by Name)
-			table.sort(v[2], function (a,b) return string.byte(a[1]) < string.byte(b[1]) end)
-			-- Replace Catagory Name with nice name
-			v[1] = menu_gen.all_categories[v[1]].name
+		for i = 1, #menugen.awfulmenutable do
+			for j,u in pairs(menubar.menu_gen.all_categories) do
+				-- Remove Categories that have no entries
+				if #menugen.awfulmenutable[i][2] == {} then
+					table.remove(menugen.awfulmenutable[i])
+				end 
+				-- Change Category Names to Nice Menu Names
+				if menugen.awfulmenutable[i][1] == j then
+					menugen.awfulmenutable[i][1] = u["name"]
+					break
+				end
+			end
 		end
-	end
-
-	--Sort Categories Alphabetically Also
-	table.sort(result, function(a,b) return string.byte(a[1]) < string.byte(b[1]) end)
-
-	return result
+	end)
+	
+	return menugen.awfulmenutable
 end
 
-
+--@params
+	-- append_menu = list of menu objects to append to start menu
+--@returns menu widget singleton with toggle() function to display and destroy object
+function create(append_menu)
+	menu_obj = {}
+	function menu_obj:toggle()
+		if menu_obj.awfulmenu then
+			menu_obj.awfulmenu:toggle()
+		else
+			local menu = {}
+			if append_menu then
+				menu = append_menu
+				menu[#menu+1] = { "Menu", build_menu() }
+			else
+				menu = build_menu()
+			end
+			menu_obj.awfulmenu = awful_menu( { items = menu, theme = { width = 180 } } )
+	
+			menu_obj:toggle() 
+		end
+	end
+	return menu_obj
+end

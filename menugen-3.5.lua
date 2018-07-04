@@ -1,5 +1,7 @@
 ---------------------------------------------------------------------------
--- @author Gino
+-- @author Harvey Mittens
+-- @copyright 2015 Harvey Mittens
+-- @email teknocratdefunct@riseup.net
 -- @release v3.5.6.3
 ---------------------------------------------------------------------------
 

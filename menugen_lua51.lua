@@ -66,7 +66,7 @@ end
 --@params
 	-- append_menu = list of menu objects to append to start menu
 --@returns menu widget singleton with toggle() function to display and destroy object
-function menugen.create(append_menu)
+function create(append_menu)
 	menu_obj = {}
 	function menu_obj:toggle()
 		if menu_obj.awfulmenu then

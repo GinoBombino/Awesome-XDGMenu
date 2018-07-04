@@ -12,8 +12,6 @@ local table = table
 local io = io
 local coroutine = coroutine
 
-module("menugen")
-
 local menugen = { awfulmenutable = {} }
 
 --Recursive Search for subdirectories in local user path (Wine Support)
@@ -64,7 +62,7 @@ function menugen.build_menu()
 end
 
 --@params
-	-- append_menu = list of menu objects to append to start menu
+--append_menu = list of menu objects to append to start menu
 --@returns menu widget singleton with toggle() function to display and destroy object
 function menugen.create(append_menu)
 	menu_obj = {}
@@ -75,9 +73,9 @@ function menugen.create(append_menu)
 			local menu = {}
 			if append_menu then
 				menu = append_menu
-				menu[#menu+1] = { "Menu", build_menu() }
+				menu[#menu+1] = { "Menu", menugen.build_menu() }
 			else
-				menu = build_menu()
+				menu = menugen.build_menu()
 			end
 			menu_obj.awfulmenu = awful_menu( { items = menu, theme = { width = 180 } } )
 	
@@ -86,3 +84,6 @@ function menugen.create(append_menu)
 	end
 	return menu_obj
 end
+
+
+return menugen
